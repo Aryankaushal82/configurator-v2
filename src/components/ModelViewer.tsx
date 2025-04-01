@@ -1,4 +1,4 @@
-
+import { Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { 
   OrbitControls, 
@@ -14,7 +14,6 @@ import {
   Center,
   Grid
 } from '@react-three/drei';
-import { Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Client, Storage, ID } from 'appwrite';
 import * as THREE from 'three';
@@ -32,7 +31,8 @@ import {
   UploadCloud,
   RefreshCw,
   CheckCircle,
-  X
+  X,
+  Ruler
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -198,9 +198,9 @@ function DimensionLines({ size, visible, modelSize, position }) {
 
 // Component for the 3D model
 function Model({ url, config, onModelLoaded }) {
-  const group = useRef();
+  const groupRef = useRef();
   const { scene, animations } = useGLTF(url);
-  const { actions } = useAnimations(animations, group);
+  const { actions } = useAnimations(animations, groupRef);
   const [modelSize, setModelSize] = useState([1, 1, 1]);
   const [loading, setLoading] = useState(true);
   
@@ -358,7 +358,7 @@ function Model({ url, config, onModelLoaded }) {
   // Apply rotation
   scene.rotation.y = config.rotation;
 
-  return <primitive ref={group} object={scene} />;
+  return <primitive ref={groupRef} object={scene} />;
 }
 
 // Component for taking screenshots
@@ -391,7 +391,7 @@ function ARView({ modelUrl, visible, onClose, modelId }) {
     if (visible && modelUrl && modelId) {
       const directModelUrl = storage.getFileDownload('67ec002100025524dd4b', modelId);
       const baseUrl = window.location.origin;
-      const fullUrl = `${baseUrl}/ar-view.html?modelUrl=${encodeURIComponent(directModelUrl)}`;
+      const fullUrl = `${baseUrl}/ar-view.html?modelUrl=${encodeURIComponent(directModelUrl.toString())}`;
       setArUrl(fullUrl);
       setShareLink(fullUrl);
       
@@ -803,39 +803,9 @@ export default function ModelViewer({ modelUrl, config }) {
     }
   };
 
-  const downloadScreenshot = () => {
-    if (screenshotPreview) {
-      const link = document.createElement('a');
-      link.href = screenshotPreview;
-      link.download = 'model-screenshot.png';
-      link.click();
-      
-      toast({
-        title: "Screenshot saved",
-        description: "Your screenshot has been downloaded."
-      });
-    }
-  };
-
-  const closePreview = () => {
-    setShowPreview(false);
-  };
-
-  const toggleARView = () => {
-    if (!uploadedModelUrl) {
-      toast({
-        title: "No model loaded",
-        description: "Please upload a 3D model first",
-        variant: "destructive"
-      });
-      return;
-    }
-    setShowAR(!showAR);
-  };
-
   const resetCamera = () => {
     if (boundsRef.current) {
-      boundsRef.current.refresh().fit();
+      boundsRef.current.fit();
     }
   };
 

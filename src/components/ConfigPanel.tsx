@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Sliders, 
@@ -6,7 +5,6 @@ import {
   Sun, 
   Play, 
   Pause, 
-  Cube, 
   Shapes, 
   Layers, 
   RotateCcw, 
