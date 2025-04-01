@@ -1,3 +1,4 @@
+
 import { Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { 
@@ -199,7 +200,9 @@ function DimensionLines({ size, visible, modelSize, position }) {
 // Component for the 3D model
 function Model({ url, config, onModelLoaded }) {
   const groupRef = useRef();
-  const { scene, animations } = useGLTF(url);
+  const result = useGLTF(url);
+  const scene = result.scene;
+  const animations = result.animations || [];
   const { actions } = useAnimations(animations, groupRef);
   const [modelSize, setModelSize] = useState([1, 1, 1]);
   const [loading, setLoading] = useState(true);
@@ -445,7 +448,7 @@ function ARView({ modelUrl, visible, onClose, modelId }) {
               variant={qrVisible ? "secondary" : "outline"}
               className="flex items-center gap-1.5"
             >
-              <QRCodeSVG size={16} />
+              <QRCodeSVG size={16} value={arUrl || ' '} />
               <span>QR Code</span>
             </Button>
             <Button 
@@ -472,7 +475,7 @@ function ARView({ modelUrl, visible, onClose, modelId }) {
             <div className="text-lg font-medium mb-3 text-center">Scan to view in AR</div>
             <div className="p-2 bg-white border border-neutral-200 rounded-lg mb-3">
               <QRCodeSVG 
-                value={arUrl} 
+                value={arUrl || ' '} 
                 size={220} 
                 bgColor={"#FFFFFF"}
                 fgColor={"#000000"}
@@ -803,6 +806,36 @@ export default function ModelViewer({ modelUrl, config }) {
     }
   };
 
+  const downloadScreenshot = () => {
+    if (screenshotPreview) {
+      const link = document.createElement('a');
+      link.href = screenshotPreview;
+      link.download = 'model-screenshot.png';
+      link.click();
+      
+      toast({
+        title: "Screenshot saved",
+        description: "Your screenshot has been downloaded."
+      });
+    }
+  };
+
+  const closePreview = () => {
+    setShowPreview(false);
+  };
+
+  const toggleARView = () => {
+    if (!uploadedModelUrl) {
+      toast({
+        title: "No model loaded",
+        description: "Please upload a 3D model first",
+        variant: "destructive"
+      });
+      return;
+    }
+    setShowAR(!showAR);
+  };
+
   const resetCamera = () => {
     if (boundsRef.current) {
       boundsRef.current.fit();
@@ -1009,7 +1042,7 @@ export default function ModelViewer({ modelUrl, config }) {
             <CameraControls onResetView={resetCamera} />
             
             {/* Screenshot button component */}
-            <ScreenshotButton onScreenshot={handleScreenshot} ref={screenshotTriggerRef} />
+            <ScreenshotButton onScreenshot={handleScreenshot} />
           </Suspense>
 
           <OrbitControls 
