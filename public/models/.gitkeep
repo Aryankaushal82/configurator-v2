@@ -1,0 +1,8 @@
+
+# This folder will contain 3D models in GLB format
+# In a production environment, add the following files:
+# - 603-02.glb
+# - 603-02-hardware-1.glb
+# - 603-02-hardware-2.glb
+# - Leg-A.glb
+# - Leg-B.glb
