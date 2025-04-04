@@ -239,7 +239,7 @@
 // export default FurnitureModel;
 
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import { MeshStandardMaterial, TextureLoader, RepeatWrapping, Color } from 'three';
 import { useConfigurator } from '../contexts/ConfiguratorContext';
@@ -250,17 +250,10 @@ const FurnitureModel: React.FC = () => {
   const { state } = useConfigurator();
   const { camera } = useThree();
   const groupRef = useRef<THREE.Group>(null);
-  
-  // Track model loading errors
   const [modelErrors, setModelErrors] = useState<Record<string, boolean>>({});
-  const [bodyMaterial, setBodyMaterial] = useState<THREE.MeshStandardMaterial | null>(null);
-  const [handleMaterial, setHandleMaterial] = useState<THREE.MeshStandardMaterial | null>(null);
-  
-  // UI related states
   const [showErrorPopup, setShowErrorPopup] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Model paths
   const mainModelPath = '/models/603-02.glb';
   const handlePath1 = '/models/603-02-Hardware-1.glb';
   const handlePath2 = '/models/603-02-Hardware-2.glb';
@@ -268,144 +261,86 @@ const FurnitureModel: React.FC = () => {
   const legPathB = '/models/Leg-B.glb';
 
   const hasError = (modelPath: string) => !!modelErrors[modelPath];
-  
+
   const handleModelError = (modelPath: string, error: Error) => {
     console.error(`Error loading model ${modelPath}:`, error);
-    setModelErrors(prev => ({ ...prev, [modelPath]: true }));
-    
-    // Show error popup
+    setModelErrors((prev) => ({ ...prev, [modelPath]: true }));
     setErrorMessage(`Failed to load model: ${modelPath.split('/').pop()}`);
     setShowErrorPopup(true);
   };
 
-  // Create handle material with the selected color
-  useEffect(() => {
-    // Default to a silver color if not specified
+  // Memoized handle material
+  const handleMaterial = useMemo(() => {
     const handleColor = state.handleColor || '#C0C0C0';
-    
-    const newHandleMaterial = new MeshStandardMaterial({
+    return new MeshStandardMaterial({
       color: new Color(handleColor),
       roughness: 0.4,
       metalness: 0.8,
       envMapIntensity: 1,
     });
-    
-    setHandleMaterial(newHandleMaterial);
   }, [state.handleColor]);
 
-  // Create body material with the selected texture
-  useEffect(() => {
-    if (!state.selectedMaterial) return;
-    
+  // Memoized body material with texture loading
+  const bodyMaterial = useMemo(() => {
+    if (!state.selectedMaterial) return null;
+
     const texturePath = `/textures/${state.selectedMaterial.image}`;
     const textureLoader = new TextureLoader();
-    
-    const loadingPromise = new Promise<THREE.Texture>((resolve, reject) => {
-      textureLoader.load(
-        texturePath,
-        resolve,
-        undefined,
-        reject
-      );
+    const texture = textureLoader.load(texturePath);
+
+    if (THREE.SRGBColorSpace !== undefined) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+    } else if (THREE.sRGBEncoding !== undefined) {
+      texture.encoding = THREE.sRGBEncoding;
+    }
+    texture.wrapS = RepeatWrapping;
+    texture.wrapT = RepeatWrapping;
+    texture.repeat.set(1, 1);
+    texture.flipY = false;
+    texture.needsUpdate = true;
+
+    const roughnessMapPath = '/roughness/roughnessMap.png';
+    const roughnessMap = textureLoader.load(roughnessMapPath, undefined, undefined, () => null); // Fallback to null if roughness fails
+    if (roughnessMap) {
+      roughnessMap.wrapS = RepeatWrapping;
+      roughnessMap.wrapT = RepeatWrapping;
+      roughnessMap.needsUpdate = true;
+    }
+
+    const material = new MeshStandardMaterial({
+      map: texture,
+      roughnessMap: roughnessMap || undefined,
+      roughness: roughnessMap ? 1 : 0.8,
+      metalness: 0.2,
+      normalScale: new THREE.Vector2(1, 1),
+      envMapIntensity: 1,
     });
-    
-    loadingPromise
-      .then((loadedTexture) => {
-        // Configure texture parameters based on THREE.js version
-        if (THREE.SRGBColorSpace !== undefined) {
-          loadedTexture.colorSpace = THREE.SRGBColorSpace;
-        } else if (THREE.sRGBEncoding !== undefined) {
-          loadedTexture.encoding = THREE.sRGBEncoding;
-        }
-        
-        loadedTexture.wrapS = RepeatWrapping;
-        loadedTexture.wrapT = RepeatWrapping;
-        loadedTexture.repeat.set(1, 1);
-        loadedTexture.flipY = false;
-        loadedTexture.needsUpdate = true;
-        
-        return loadedTexture;
-      })
-      .then((configuredTexture) => {
-        // Load roughness map
-        return new Promise<{texture: THREE.Texture, roughnessMap?: THREE.Texture}>((resolve, reject) => {
-          const roughnessMapPath = '/roughness/roughnessMap.png';
-          textureLoader.load(
-            roughnessMapPath,
-            (roughnessMap) => {
-              roughnessMap.wrapS = RepeatWrapping;
-              roughnessMap.wrapT = RepeatWrapping;
-              roughnessMap.needsUpdate = true;
-              resolve({texture: configuredTexture, roughnessMap});
-            },
-            undefined,
-            () => {
-              // Just resolve with the texture if roughness map fails
-              resolve({texture: configuredTexture});
-            }
-          );
-        });
-      })
-      .then(({texture, roughnessMap}) => {
-        // Create material
-        const newMaterial = new MeshStandardMaterial({
-          map: texture,
-          roughnessMap: roughnessMap,
-          roughness: roughnessMap ? 1 : 2.8,
-          metalness: 0.2,
-          normalScale: new THREE.Vector2(1, 1),
-          envMapIntensity: 1,
-        });
-        
-        setBodyMaterial(newMaterial);
-      })
-      .catch((error) => {
-        console.error('Error loading texture:', error);
-        
-        // Show error popup
-        setErrorMessage(`Failed to load texture: ${state.selectedMaterial?.image}`);
-        setShowErrorPopup(true);
-        
-        // Set fallback material
-        setBodyMaterial(
-          new MeshStandardMaterial({
-            color: '#A67B5B',
-            roughness: 0.8,
-          })
-        );
-      });
+
+    return material;
   }, [state.selectedMaterial]);
 
-  // Setup camera
   useEffect(() => {
     if (camera) {
       camera.position.set(2, 1, 2);
       camera.lookAt(0, 0, 0);
     }
   }, [camera]);
-  
-  // Rotate model
+
   useFrame(() => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += 0.001;
-    }
+    if (groupRef.current) groupRef.current.rotation.y += 0.001;
   });
 
-  // Generate unique keys only based on model path to prevent unnecessary remounts 
-  const getModelKey = (baseName: string, modelPath: string) => 
+  const getModelKey = (baseName: string, modelPath: string) =>
     `${baseName}-${modelPath.split('/').pop()}`;
-  
-  // Close error popup
+
   const closeErrorPopup = () => {
     setShowErrorPopup(false);
     setErrorMessage('');
   };
 
-  // Determine which handle model to show
   const selectedHandlePath = state.selectedHandle === '603-02-Hardware-1' ? handlePath1 : handlePath2;
   const selectedLegPath = state.selectedLeg === 'Leg-A' ? legPathA : legPathB;
 
-  // Error Popup Component
   const ErrorPopup = () => (
     <div className="error-popup">
       <div className="error-popup-content">
@@ -419,47 +354,42 @@ const FurnitureModel: React.FC = () => {
   return (
     <>
       <group ref={groupRef} position={[0, 0, 0]}>
-        {/* Main model */}
         <ModelErrorBoundary>
           {!hasError(mainModelPath) && (
-            <ModelLoader 
+            <ModelLoader
               key={getModelKey('main', mainModelPath)}
-              modelPath={mainModelPath} 
+              modelPath={mainModelPath}
               material={bodyMaterial}
               onError={(error) => handleModelError(mainModelPath, error)}
             />
           )}
         </ModelErrorBoundary>
 
-        {/* Handle model */}
         <ModelErrorBoundary>
           {!hasError(selectedHandlePath) && (
-            <ModelLoader 
+            <ModelLoader
               key={getModelKey('handle', selectedHandlePath)}
-              modelPath={selectedHandlePath} 
+              modelPath={selectedHandlePath}
               material={handleMaterial}
               onError={(error) => handleModelError(selectedHandlePath, error)}
             />
           )}
         </ModelErrorBoundary>
 
-        {/* Leg model */}
         <ModelErrorBoundary>
           {!hasError(selectedLegPath) && (
-            <ModelLoader 
+            <ModelLoader
               key={getModelKey('leg', selectedLegPath)}
-              modelPath={selectedLegPath} 
+              modelPath={selectedLegPath}
               material={bodyMaterial}
               onError={(error) => handleModelError(selectedLegPath, error)}
             />
           )}
         </ModelErrorBoundary>
       </group>
-      
-      {/* Error popup */}
       {showErrorPopup && <ErrorPopup />}
     </>
   );
 };
 
-export default FurnitureModel;
+export default React.memo(FurnitureModel); // Memoize FurnitureModel to prevent parent re-renders
