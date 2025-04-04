@@ -90,17 +90,12 @@
 // export default ModelLoader;
 
 
-import React, { useEffect, useState } from 'react';
-import { useLoader } from '@react-three/fiber';
+import React, { useEffect, useState, useRef } from 'react';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import * as THREE from 'three';
 
-interface ModelLoaderProps {
-  modelPath: string;
-  material: THREE.Material | null;
-  onError?: (error: Error) => void;
-}
-
+// Separated the loader implementation from the component
+// This way we avoid hook rule violations completely
 export class ModelErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean }
@@ -126,72 +121,94 @@ export class ModelErrorBoundary extends React.Component<
   }
 }
 
-const ModelLoader: React.FC<ModelLoaderProps> = ({ modelPath, material, onError }) => {
-  // Use a ref to track if we've already called onError
-  const errorRef = React.useRef(false);
-  
-  // Always call useLoader outside of any conditions
-  let gltf;
-  try {
-    gltf = useLoader(GLTFLoader, modelPath);
-  } catch (error) {
-    // Only call onError once per error
-    if (!errorRef.current && onError && error instanceof Error) {
-      errorRef.current = true;
-      onError(error);
-    }
-    return null;
-  }
-  
-  // Reset error ref if we successfully loaded
-  errorRef.current = false;
-  
-  // Use a state to store the processed model
-  const [model, setModel] = useState<THREE.Group | null>(null);
-  
-  useEffect(() => {
-    if (gltf) {
-      const clonedScene = gltf.scene.clone(true);
-      
-      if (material) {
-        clonedScene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            // Preserve the original UV mapping
-            const originalGeometry = child.geometry;
-            
-            // Create a new material instance for each mesh to prevent sharing
-            const newMaterial = material.clone();
-            
-            // If the mesh has UV coordinates, configure texture mapping
-            if (originalGeometry.attributes.uv) {
-              if (newMaterial instanceof THREE.MeshStandardMaterial && newMaterial.map) {
-                // Configure texture parameters based on THREE.js version
-                if (THREE.SRGBColorSpace) {
-                  // For newer THREE.js versions
-                  newMaterial.map.colorSpace = THREE.SRGBColorSpace;
-                } else if (THREE.sRGBEncoding) {
-                  // For older THREE.js versions
-                  newMaterial.map.encoding = THREE.sRGBEncoding;
-                }
-                
-                newMaterial.map.flipY = false;
-                newMaterial.map.needsUpdate = true;
-                
-                // Ensure proper UV mapping
-                originalGeometry.attributes.uv.needsUpdate = true;
-              }
-            }
-            
-            // Apply the configured material
-            child.material = newMaterial;
-          }
-        });
-      }
-      
-      setModel(clonedScene);
-    }
-  }, [gltf, material]);
+interface ModelLoaderProps {
+  modelPath: string;
+  material: THREE.Material | null;
+  onError?: (error: Error) => void;
+}
 
+const ModelLoader: React.FC<ModelLoaderProps> = ({ modelPath, material, onError }) => {
+  const [model, setModel] = useState<THREE.Group | null>(null);
+  const loaderRef = useRef(new GLTFLoader());
+  const isMounted = useRef(true);
+  
+  // Load the model manually using effects
+  useEffect(() => {
+    // Reset model state
+    setModel(null);
+    
+    // Track component mounted state
+    isMounted.current = true;
+    
+    loaderRef.current.load(
+      modelPath,
+      (gltf) => {
+        // Don't update state if component unmounted
+        if (!isMounted.current) return;
+        
+        try {
+          const clonedScene = gltf.scene.clone(true);
+          
+          if (material) {
+            clonedScene.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                // Preserve original geometry
+                const originalGeometry = child.geometry;
+                
+                // Create a new material instance for each mesh
+                const newMaterial = material.clone();
+                
+                // Apply material
+                child.material = newMaterial;
+                
+                // If the mesh has UV coordinates, configure texture mapping
+                if (originalGeometry.attributes.uv && 
+                    newMaterial instanceof THREE.MeshStandardMaterial && 
+                    newMaterial.map) {
+                  
+                  // Handle different THREE.js versions
+                  if (THREE.SRGBColorSpace !== undefined) {
+                    newMaterial.map.colorSpace = THREE.SRGBColorSpace;
+                  } else if (THREE.sRGBEncoding !== undefined) {
+                    newMaterial.map.encoding = THREE.sRGBEncoding;
+                  }
+                  
+                  newMaterial.map.flipY = false;
+                  newMaterial.map.needsUpdate = true;
+                  
+                  // Update geometry
+                  originalGeometry.attributes.uv.needsUpdate = true;
+                }
+              }
+            });
+          }
+          
+          setModel(clonedScene);
+        } catch (error) {
+          console.error("Error processing model:", error);
+          if (onError && error instanceof Error) {
+            onError(error);
+          }
+        }
+      },
+      // Progress callback - optional
+      undefined,
+      // Error callback
+      (error) => {
+        console.error(`Error loading model ${modelPath}:`, error);
+        if (isMounted.current && onError) {
+          onError(error);
+        }
+      }
+    );
+    
+    // Cleanup function
+    return () => {
+      isMounted.current = false;
+    };
+  }, [modelPath, material, onError]);
+
+  // Render the model if loaded
   return model ? <primitive object={model} /> : null;
 };
 
