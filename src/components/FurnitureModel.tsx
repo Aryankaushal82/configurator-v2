@@ -391,9 +391,9 @@ const FurnitureModel: React.FC = () => {
     }
   });
 
-  // Generate unique keys for components that need to be remounted
-  const getModelKey = (baseName: string, variant: string, extras?: string) => 
-    `${baseName}-${variant}${extras ? `-${extras}` : ''}`;
+  // Generate unique keys only based on model path to prevent unnecessary remounts 
+  const getModelKey = (baseName: string, modelPath: string) => 
+    `${baseName}-${modelPath.split('/').pop()}`;
   
   // Close error popup
   const closeErrorPopup = () => {
@@ -435,7 +435,7 @@ const FurnitureModel: React.FC = () => {
         <ModelErrorBoundary>
           {!hasError(selectedHandlePath) && (
             <ModelLoader 
-              key={getModelKey('handle', state.selectedHandle, state.handleColor)}
+              key={getModelKey('handle', selectedHandlePath)}
               modelPath={selectedHandlePath} 
               material={handleMaterial}
               onError={(error) => handleModelError(selectedHandlePath, error)}
@@ -447,7 +447,7 @@ const FurnitureModel: React.FC = () => {
         <ModelErrorBoundary>
           {!hasError(selectedLegPath) && (
             <ModelLoader 
-              key={getModelKey('leg', state.selectedLeg)}
+              key={getModelKey('leg', selectedLegPath)}
               modelPath={selectedLegPath} 
               material={bodyMaterial}
               onError={(error) => handleModelError(selectedLegPath, error)}
