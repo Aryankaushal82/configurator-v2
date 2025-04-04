@@ -298,8 +298,15 @@ const FurnitureModel: React.FC = () => {
       textureLoader.load(
         texturePath,
         (loadedTexture) => {
-          // Configure texture parameters
-          loadedTexture.encoding = SRGBColorSpace;
+          // Configure texture parameters based on THREE.js version
+          if (THREE.SRGBColorSpace) {
+            // For newer THREE.js versions 
+            loadedTexture.colorSpace = THREE.SRGBColorSpace;
+          } else if (THREE.sRGBEncoding) {
+            // For older THREE.js versions
+            loadedTexture.encoding = THREE.sRGBEncoding;
+          }
+          
           loadedTexture.wrapS = RepeatWrapping;
           loadedTexture.wrapT = RepeatWrapping;
           loadedTexture.repeat.set(1, 1);
@@ -386,7 +393,7 @@ const FurnitureModel: React.FC = () => {
     setErrorMessage('');
   };
 
-  // Error Popup Component - This would be rendered in your UI layer
+  // Error Popup Component
   const ErrorPopup = () => {
     if (!showErrorPopup) return null;
     
@@ -415,54 +422,50 @@ const FurnitureModel: React.FC = () => {
           )}
         </ModelErrorBoundary>
 
-        {/* Handle models with key to force remount when selection changes */}
-        {state.selectedHandle === '603-02-Hardware-1' ? (
+        {/* Handle models */}
+        {state.selectedHandle === '603-02-Hardware-1' && !hasError(handlePath1) && (
           <ModelErrorBoundary key={handleModelKey}>
-            {!hasError(handlePath1) && (
-              <ModelLoader 
-                modelPath={handlePath1} 
-                material={handleMaterial}
-                onError={(error) => handleModelError(handlePath1, error)}
-              />
-            )}
+            <ModelLoader 
+              modelPath={handlePath1} 
+              material={handleMaterial}
+              onError={(error) => handleModelError(handlePath1, error)}
+            />
           </ModelErrorBoundary>
-        ) : (
+        )}
+        
+        {state.selectedHandle === '603-02-Hardware-2' && !hasError(handlePath2) && (
           <ModelErrorBoundary key={handleModelKey}>
-            {!hasError(handlePath2) && (
-              <ModelLoader 
-                modelPath={handlePath2} 
-                material={handleMaterial}
-                onError={(error) => handleModelError(handlePath2, error)}
-              />
-            )}
+            <ModelLoader 
+              modelPath={handlePath2} 
+              material={handleMaterial}
+              onError={(error) => handleModelError(handlePath2, error)}
+            />
           </ModelErrorBoundary>
         )}
 
-        {/* Leg models with key to force remount when selection changes */}
-        {state.selectedLeg === 'Leg-A' ? (
+        {/* Leg models */}
+        {state.selectedLeg === 'Leg-A' && !hasError(legPathA) && (
           <ModelErrorBoundary key={legModelKey}>
-            {!hasError(legPathA) && (
-              <ModelLoader 
-                modelPath={legPathA} 
-                material={bodyMaterial} 
-                onError={(error) => handleModelError(legPathA, error)} 
-              />
-            )}
+            <ModelLoader 
+              modelPath={legPathA} 
+              material={bodyMaterial} 
+              onError={(error) => handleModelError(legPathA, error)} 
+            />
           </ModelErrorBoundary>
-        ) : (
+        )}
+        
+        {state.selectedLeg === 'Leg-B' && !hasError(legPathB) && (
           <ModelErrorBoundary key={legModelKey}>
-            {!hasError(legPathB) && (
-              <ModelLoader 
-                modelPath={legPathB} 
-                material={bodyMaterial} 
-                onError={(error) => handleModelError(legPathB, error)} 
-              />
-            )}
+            <ModelLoader 
+              modelPath={legPathB} 
+              material={bodyMaterial} 
+              onError={(error) => handleModelError(legPathB, error)} 
+            />
           </ModelErrorBoundary>
         )}
       </group>
       
-      {/* Return the ErrorPopup component for React Three Fiber to render it in HTML */}
+      {/* Return the ErrorPopup component */}
       {showErrorPopup && <ErrorPopup />}
     </>
   );
