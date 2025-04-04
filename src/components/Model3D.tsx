@@ -2,7 +2,7 @@
 import React, { useState, useEffect,useRef } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Circles } from 'react-loader-spinner';
-import { OrbitControls, ContactShadows, Environment } from '@react-three/drei';
+import { OrbitControls, ContactShadows, Environment, Bounds } from '@react-three/drei';
 import FurnitureModel from './FurnitureModel';
 import ViewerControls from './ViewerControls';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
@@ -602,8 +602,9 @@ const Model3D = () => {
             <ambientLight intensity={0.5} />
             <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
             <pointLight position={[-10, -10, -10]} intensity={0.5} />
-            
-            <FurnitureModel />
+            <Bounds>
+              <FurnitureModel />
+            </Bounds>  
             
             <ContactShadows
               position={[0, -0.1, 0]}
@@ -684,7 +685,7 @@ const Model3D = () => {
                 </div>
                 
                 {/* Mobile specific controls for AR */}
-                {isMobile() && (
+                {/* {isMobile() && (
                   <div className="p-4 border-t flex justify-center">
                     <button 
                       className="px-6 py-3 rounded-lg bg-green-500 text-white flex items-center justify-center gap-2 shadow-md hover:bg-green-600"
@@ -703,7 +704,7 @@ const Model3D = () => {
                       View in Your Space
                     </button>
                   </div>
-                )}
+                )} */}
               </div>
             </div>
           )}
