@@ -23,7 +23,7 @@ const Configurator: React.FC = () => {
           {/* Logo */}
           <div className="absolute top-6 left-6 z-10">
             <img 
-              src="/lovable-uploads/dedfb04e-5d6b-4c3c-8b01-d257254d5d14.png" 
+              src="https://cdn.prod.website-files.com/65792fa13a1bbf4d8e520e33/65ddb66c43de033385b8502b_Delta-new-logo%20(1).avif" 
               alt="Ikarus Delta Logo" 
               className="h-8 w-auto"
             />
