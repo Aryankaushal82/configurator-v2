@@ -662,26 +662,40 @@ const Model3D = () => {
                 {/* Modal Body with model-viewer */}
                 <div className="flex-grow relative">
                   <model-viewer
-                    ref={modelViewerRef}
-                    src={modelUrl}
-                    ar
-                    ar-modes="webxr scene-viewer quick-look"
-                    camera-controls
-                    ar-scale="auto"
-                    auto-rotate
-                    shadow-intensity="1"
-                    environment-image="neutral"
-                    exposure="0.8"
-                    style={{ width: '100%', height: '100%' }}
-                  >
-                    {/* AR Button placed in the center bottom for better visibility */}
-                    <button 
-                      slot="ar-button" 
-                      className="absolute bottom-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg bg-blue-500 text-white flex items-center justify-center gap-2 shadow-md hover:bg-blue-600"
+                      ref={modelViewerRef}
+                      src={modelUrl}
+                      ar
+                      ar-modes="webxr scene-viewer quick-look"
+                      camera-controls
+                      ar-scale="auto"
+                      auto-rotate
+                      shadow-intensity="1"
+                      shadow-softness="1"
+                      environment-image="neutral"
+                      exposure="0.9"
+                      style={{ width: '100%', height: '100%' }}
+                      camera-orbit="0deg 75deg 3m"
+                      field-of-view="30deg"
+                      min-camera-orbit="auto auto 2m"
+                      max-camera-orbit="auto auto 6m"
+                      autoplay
+                      tone-mapping="commerce"
+                      interaction-prompt="auto"
+                      interaction-prompt-style="basic"
                     >
-                      {isMobile() ? 'View in Your Space' : 'View in AR'}
-                    </button>
-                  </model-viewer>
+                      {/* Custom AR Button */}
+                      {/* <button 
+                        slot="ar-button" 
+                        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg bg-blue-500 text-white flex items-center justify-center gap-2 shadow-md hover:bg-blue-600"
+                      >
+                        {isMobile() ? 'View in Your Space' : 'View in AR'}
+                      </button>
+
+                      {/* Optional Loading Indicator */}
+                      {/*<div slot="progress-bar" className="w-full h-1 bg-gray-200">
+                        <div className="h-1 bg-blue-500 animate-pulse" style={{ width: '50%' }}></div>
+                      </div> */}
+                    </model-viewer>
                 </div>
                 
                 {/* Mobile specific controls for AR */}
