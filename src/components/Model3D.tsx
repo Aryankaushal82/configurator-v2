@@ -9,6 +9,8 @@ import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import * as THREE from 'three';
 import { Client, Storage, ID } from 'appwrite';
+import DimensionController from './DimensionController';
+
 
 
 
@@ -72,6 +74,29 @@ const ControlsExposer = () => {
 //   });
 // };
 
+const AxesHelperController = () => {
+  const [visible, setVisible] = useState(false);
+  
+  useEffect(() => {
+    // Listen for custom event from ViewerControls
+    const handleToggle = (event) => {
+      setVisible(event.detail.visible);
+    };
+    
+    window.addEventListener('toggleAxesHelper', handleToggle);
+    
+    // Initial state from configurator if available
+    if (window.configuratorState && window.configuratorState.state) {
+      setVisible(!!window.configuratorState.state.showCoordinates);
+    }
+    
+    return () => {
+      window.removeEventListener('toggleAxesHelper', handleToggle);
+    };
+  }, []);
+  
+  return <AxesHelper visible={visible} animate={true} />;
+};
 
 
 const SceneExporter = ({ onExportStart, onExportComplete, onExportError }) => {
@@ -215,203 +240,6 @@ const SceneExporter = ({ onExportStart, onExportComplete, onExportError }) => {
 
   return null;
 };
-
-
-// const Model3D = () => {
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [isExporting, setIsExporting] = useState(false);
-//   const [background, setBackground] = useState('light');
-//   const [isFullscreen, setIsFullscreen] = useState(false);
-//   const [exportError, setExportError] = useState(null);
-//   const [modelUrl, setModelUrl] = useState(null);
-
-//   // Simulate loading time
-//   useEffect(() => {
-//     const timer = setTimeout(() => {
-//       setIsLoading(false);
-//     }, 1500);
-//     return () => clearTimeout(timer);
-//   }, []);
-
-//   // Log modelUrl state changes and clean up when component unmounts
-//   useEffect(() => {
-//     if (modelUrl) {
-//       console.log("✅ modelUrl state updated:", modelUrl);
-//     }
-    
-//     return () => {
-//       if (modelUrl) {
-//         console.log("Cleaning up modelUrl:", modelUrl);
-//         URL.revokeObjectURL(modelUrl);
-//       }
-//     };
-//   }, [modelUrl]);
-
-//   const handleExportDownload = async () => {
-//     setExportError(null);
-//     setIsExporting(true);
-  
-//     try {
-//       if (!window.exportScene) {
-//         throw new Error('Export functionality not available');
-//       }
-  
-//       // Export the GLB blob
-//       const { blob } = await window.exportScene();
-  
-//       // Create a File object
-//       const file = new File([blob], `custom-configured-model${Math.random()*1000}.glb`, { type: 'model/gltf-binary' });
-  
-//       // Upload to Appwrite bucket
-//       const uploadedFile = await storage.createFile(
-//         '67ec002100025524dd4b', // your bucket ID
-//         ID.unique(),            // generates a unique file ID
-//         file
-//       );
-  
-//       console.log('File uploaded:', uploadedFile);
-  
-//       // Generate public URL (this assumes your bucket has public access for read)
-//       const fileUrl = storage.getFileView(
-//         '67ec002100025524dd4b', // same bucket ID
-//         uploadedFile.$id        // ID returned by createFile
-//       );
-  
-//       // Save the URL to localStorage
-//       console.log('File URL:', fileUrl);
-//       localStorage.setItem('exportedModelURL', fileUrl);
-  
-//       console.log('Public file URL saved to localStorage:', fileUrl);
-//       setIsExporting(false);
-//     } catch (error) {
-//       console.error('Export failed:', error);
-//       setExportError(error.message || 'Export failed');
-//       setIsExporting(false);
-//     }
-//   };
-    
-//   const setBackgroundSetting = (setting) => {
-//     setBackground(setting);
-//   };
-
-//   // Function to toggle fullscreen
-//   const toggleFullscreen = () => {
-//     setIsFullscreen(!isFullscreen);
-//     // Add actual fullscreen implementation if needed
-//   };
-
-//   // Provide context values to ViewerControls
-//   useEffect(() => {
-//     // Mocking the ConfiguratorContext for ViewerControls
-//     window.configuratorState = {
-//       state: {
-//         backgroundSetting: background,
-//         isFullscreen: isFullscreen
-//       },
-//       setBackgroundSetting: setBackgroundSetting,
-//       toggleFullscreen: toggleFullscreen
-//     };
-//   }, [background, isFullscreen]);
-
-//   // Background color based on setting
-//   const getBackgroundColor = () => {
-//     switch(background) {
-//       case 'dark': return '#333333';
-//       case 'gradient': return 'linear-gradient(to bottom, #4a6fa5, #c4e0e5)';
-//       default: return '#f5f5f5';
-//     }
-//   };
-
-//   return (
-//     <div className={`h-full w-full relative ${isFullscreen ? 'fixed inset-0 z-50' : ''}`} 
-//          style={{background: getBackgroundColor()}}>
-//       {isLoading ? (
-//         <div className="h-full w-full flex items-center justify-center bg-gray-100">
-//           <Circles
-//             height="80"
-//             width="80"
-//             color="#4fa94d"
-//             ariaLabel="circles-loading"
-//             visible={true}
-//           />
-//         </div>
-//       ) : (
-//         <>
-//           <div className="absolute bottom-10 right-4 flex flex-col space-y-3 z-10">
-//             <button 
-//               className="px-6 py-3 rounded-lg bg-transparent text-black border-1 border-black flex items-center justify-center gap-2 shadow-md transition-all duration-300 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
-//               onClick={handleExportDownload}
-//               disabled={isExporting}
-//             >
-//               {isExporting ? (
-//                 <>
-//                   <svg className="animate-spin h-5 w-5 text-black" viewBox="0 0 24 24">
-//                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-//                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-//                   </svg>
-//                   Exporting...
-//                 </>
-//               ) : 'Download GLB'}
-//             </button>
-//           </div>
-          
-//           {exportError && (
-//             <div className="absolute top-24 left-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-md z-10 max-w-md">
-//               <p className="font-bold">Export Error</p>
-//               <p>{exportError}</p>
-//             </div>
-//           )}
-          
-//           <Canvas shadows camera={{ position: [0, 0, 5], fov: 50 }}>
-//             <ambientLight intensity={0.5} />
-//             <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
-//             <pointLight position={[-10, -10, -10]} intensity={0.5} />
-            
-//             <FurnitureModel />
-            
-//             <ContactShadows
-//               position={[0, -0.1, 0]}
-//               opacity={0.75}
-//               scale={10}
-//               blur={2.5}
-//               far={4}
-//             />
-//             <Environment preset="city" />
-            
-//             <OrbitControls 
-//               enablePan={true} 
-//               enableZoom={true} 
-//               enableRotate={true} 
-//               minDistance={2} 
-//               maxDistance={7} 
-//             />
-//             <ControlsExposer />
-//             <SceneExporter 
-//               onExportStart={() => setIsExporting(true)}
-//               onExportComplete={(blob, url) => {
-//                 setIsExporting(false);
-//                 console.log("Export completed in SceneExporter callback");
-//               }}
-//               onExportError={(error) => {
-//                 setIsExporting(false);
-//                 setExportError(error.message || 'Export failed');
-//               }}
-//             />
-//           </Canvas>
-          
-//           {/* Position the controls */}
-//           <div className="absolute top-4 right-4">
-//             <ViewerControls />
-//           </div>
-          
-         
-          
-//         </>
-//       )}
-//     </div>
-//   );
-// };
-// export default Model3D;
 
 
 const Model3D = () => {
@@ -618,11 +446,11 @@ const Model3D = () => {
             <OrbitControls 
               enablePan={true} 
               enableZoom={true} 
-              enableRotate={true} 
               minDistance={2} 
               maxDistance={7} 
             />
             <ControlsExposer />
+            <DimensionController/> 
             <SceneExporter 
               onExportStart={() => setIsExporting(true)}
               onExportComplete={(blob, url) => {
@@ -668,7 +496,7 @@ const Model3D = () => {
                       ar-modes="webxr scene-viewer quick-look"
                       camera-controls
                       ar-scale="auto"
-                      auto-rotate
+                      // auto-rotate
                       shadow-intensity="1"
                       shadow-softness="1"
                       environment-image="neutral"

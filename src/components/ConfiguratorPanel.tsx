@@ -127,8 +127,7 @@ const ConfiguratorPanel: React.FC = () => {
   
   return (
     <div className="bg-white h-full overflow-y-auto p-6">
-      <h1 className="text-2xl font-bold mb-1">Box Configurator</h1>
-      <div className="w-32 h-2 bg-gray-200 mb-6"></div>
+     <h1 className="text-2xl font-bold mb-1  text-white md:text-black">Box Configurator</h1>
       
       <h2 className="text-xl font-semibold mb-4 flex items-center justify-between">
         Customize your box
