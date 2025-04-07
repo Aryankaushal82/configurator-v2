@@ -33,9 +33,9 @@ const DimensionLines = ({ visible, animate = true, target }) => {
     
     // Calculate dimensions
     setDimensions({
-      width: Math.abs(max.x - min.x-5).toFixed(2),
-      height: Math.abs(max.y - min.y+10).toFixed(2),
-      depth: Math.abs(max.z - min.z-4).toFixed(2)
+      width: Math.abs(max.x - min.x-9.34).toFixed(2),
+      height: Math.abs(max.y - min.y-0.10).toFixed(2),
+      depth: Math.abs(max.z - min.z-9.36).toFixed(2)
     });
   }, [visible, scene, target]);
   
@@ -110,7 +110,7 @@ const DimensionLines = ({ visible, animate = true, target }) => {
       anchorX="center"
       anchorY="middle"
     >
-      {`Width: ${dimensions.width}`}
+      {`Width: ${dimensions.width}m`}
     </Text>
   </group>
 
@@ -162,7 +162,7 @@ const DimensionLines = ({ visible, animate = true, target }) => {
       anchorY="middle"
       rotation={[0, 0, Math.PI / 2]}
     >
-      {`Height: ${dimensions.height}`}
+      {`Height: ${dimensions.height}m`}
     </Text>
   </group>
 
@@ -213,7 +213,7 @@ const DimensionLines = ({ visible, animate = true, target }) => {
       anchorX="center"
       anchorY="middle"
     >
-      {`Depth: ${dimensions.depth}`}
+      {`Depth: ${dimensions.depth}m`}
     </Text>
   </group>
 
